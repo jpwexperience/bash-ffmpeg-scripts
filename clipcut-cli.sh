@@ -1,5 +1,11 @@
 #!/usr/bin/env bash
 #Does accept multiple inputs but they are run sequentially
+
+if [ "$#" -eq 0 ]; then
+  echo "Usage: $(basename $0) <input videos> " >&2
+  exit 0
+fi
+
 #total streams
 streamArr=()
 
@@ -13,7 +19,7 @@ audioMetaArr=()
 audioTypeArr=()
 audioChoice=0 #user input subtitle stream choice
 
-subtitleArr=()	
+subtitleArr=()
 subtitleTypeArr=()
 subtitleMetaArr=()
 subtitleChoice=0 #user input subtitle stream choice
@@ -21,10 +27,10 @@ subtitleChoice=0 #user input subtitle stream choice
 ffprobeOut=() #ffprobe output array. each element is the next line
 verboseFl=0 #full ffprobe output
 
-inputSize=0 #number of ffprobe output lines 
+inputSize=0 #number of ffprobe output lines
 cmd=""
 
-#$1: User Input 
+#$1: User Input
 #$2: Number of Streams
 inRangeCode=0
 in_range () {
@@ -56,7 +62,7 @@ meta_check () {
 		#echo "no available meta"
 		:
 	else
-		#echo "${ffprobeOut[$index]}"	
+		#echo "${ffprobeOut[$index]}"
 		if [[ ${ffprobeOut[$index]} =~ (.*)(M|m)"etadata"(.*) ]]; then
 			index=$((index+1))
 			if [[ ${ffprobeOut[$index]} =~ (.*)(T|t)"itle"(.*) ]]; then
@@ -89,7 +95,7 @@ for input in "$@"; do
 	mainLoop=1
 	while (( $mainLoop == 1 )); do
 		#currently only check if extra arguments are files
-		if [[ -e $input && $input != "-v" ]]; then 
+		if [[ -e $input && $input != "-v" ]]; then
 			streamArr=()
 			videoArr=()
 			videoMetaArr=()
@@ -97,7 +103,7 @@ for input in "$@"; do
 			audioArr=()
 			audioMetaArr=()
 			audioTypeArr=()
-			subtitleArr=()	
+			subtitleArr=()
 			subtitleTypeArr=()
 			subtitleMetaArr=()
 			base=${input##*/}
@@ -107,7 +113,7 @@ for input in "$@"; do
 			base="$temp"
 			#running into problems where the name has '.' in it
 			ext=${input##*.}
-			echo -e "\nbase: $base dir: $dir ext: $ext"
+			#echo -e "\nbase: $base dir: $dir ext: $ext"
 			#get file information, redirect sterr
 			info="$(ffprobe -analyzeduration 100M -probesize 500K -i "$input" -hide_banner 2>&1)"
 			if (( verboseFl == 1 )); then
@@ -130,7 +136,7 @@ for input in "$@"; do
 				line=${ffprobeOut[i]}
 
 				if [[ $line =~ (S|s)"tream"(.*) ]]; then
-					#echo "$line"	
+					#echo "$line"
 					streamArr+=("$line")
 					if [[ $line =~ (.*)(V|v)"ideo"(.*) ]]; then
 						videoArr+=("$line")
@@ -148,7 +154,7 @@ for input in "$@"; do
 						#echo "$line"
 						#echo "Unidentified Stream"
 						:
-					fi	
+					fi
 
 				fi
 			done
@@ -204,7 +210,7 @@ for input in "$@"; do
 					count=$((count+1))
 				done
 				read -p "Type the number corresponding to the video stream you want to use, followed by [ENTER]: " videoChoice
-				in_range $videoChoice ${#videoArr[@]} 
+				in_range $videoChoice ${#videoArr[@]}
 				#echo "$inRangeCode"
 				videoChoice=$inRangeCode
 			fi
@@ -212,7 +218,7 @@ for input in "$@"; do
 			if (( ${#audioArr[@]} == 0 )); then
 				echo "No Audio Choice"
 				audioChoice=-1
-			else	
+			else
 				count=0
 				echo -e "\n\t-Audio Streams-"
 				#for i in $(seq 1 ${#audioArr[@]}); do
@@ -237,11 +243,11 @@ for input in "$@"; do
 					#echo "$type"
 					audioTypeArr+=("$type")
 					count=$((count+1))
-				#done			
+				#done
 				done
-				
+
 				read -p "Type the number corresponding to the audio stream you want to use (-1 for no audio), followed by [ENTER]: " audioChoice
-				in_range $audioChoice ${#audioArr[@]} 
+				in_range $audioChoice ${#audioArr[@]}
 				#echo "$inRangeCode"
 				#echo "$audioChoice"
 				audioChoice=$inRangeCode
@@ -278,7 +284,7 @@ for input in "$@"; do
 					count=$((count+1))
 				done
 				read -p "Type the number corresponding to the subtitle stream you want to use (-1 for no subtitles), followed by [ENTER]: " subtitleChoice
-				in_range $subtitleChoice ${#subtitleArr[@]} 
+				in_range $subtitleChoice ${#subtitleArr[@]}
 				subtitleChoice=$inRangeCode
 			fi
 		#Skip argument if it isnt a file
@@ -304,7 +310,7 @@ for input in "$@"; do
 		cmdCrf="-crf $crfIn"
 		cmdOut="\"$outputPath\""
 		cmdFiltComp="-filter_complex \"[0:v:$videoChoice][0:s:$subtitleChoice]overlay[v]\" -map \"[v]\""
-		cmdMapV="-map 0:v:$videoChoice" 
+		cmdMapV="-map 0:v:$videoChoice"
 		cmdMapA="-map 0:a:$audioChoice"
 		cmdAudio="-c:a aac"
 		cmdVfInt="-vf subtitles=\"$dir$base.$ext:si=$subtitleChoice\""
