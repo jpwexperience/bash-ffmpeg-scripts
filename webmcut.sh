@@ -88,6 +88,12 @@ fi
 if [[ -z "$scale" ]]; then
 	scale="-1"
 fi
+if [[ -z "$subType" ]]; then
+	subType="n"
+fi
+if [[ -z "$subChoice" ]]; then
+	subChoice="n"
+fi
 if [[ -z "$size" ]]; then
 	size="0.35M"
 else

@@ -79,8 +79,17 @@ fi
 if [[ -z "$cropH" ]]; then
         cropH="-1"
 fi
+if [[ -z "$subType" ]]; then
+        subType="n"
+fi
+if [[ -z "$subChoice" ]]; then
+        subChoice="n"
+fi
 if [[ -z "$scaleFactor" ]]; then
         scaleFactor="-1"
+fi
+if [[ -z "$fpsValue" ]]; then
+        fpsValue="23"
 fi
 
 ####Subtitle Stuff
