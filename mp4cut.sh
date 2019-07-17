@@ -10,51 +10,51 @@ while getopts i:o:s:t:v:c:w:h:l:f:r:a opt; do
   case $opt in
     i)
       fileIn="$OPTARG"
-      echo "-i was triggered, Parameter: $OPTARG" >&2
+      #echo "-i was triggered, Parameter: $OPTARG" >&2
       ;;
     o)
       outVid="$OPTARG" #path and name of output gif
-      echo "-o was triggered, Parameter: $OPTARG" >&2
+      #echo "-o was triggered, Parameter: $OPTARG" >&2
       ;;
     s)
       clipStart="$OPTARG" #start time
-      echo "-s was triggered, Parameter: $OPTARG" >&2
+      #echo "-s was triggered, Parameter: $OPTARG" >&2
       ;;
     t)
       dur="$OPTARG" #clip duration
-      echo "-t was triggered, Parameter: $OPTARG" >&2
+      #echo "-t was triggered, Parameter: $OPTARG" >&2
       ;;
     v)
       subType="$OPTARG" #e or i for external and interal respectively
-      echo "-v was triggered, Parameter: $OPTARG" >&2
+      #echo "-v was triggered, Parameter: $OPTARG" >&2
       ;;
     c)
       subChoice="$OPTARG"
-      echo "-c was triggered, Parameter: $OPTARG" >&2
+      #echo "-c was triggered, Parameter: $OPTARG" >&2
       ;;
     r)
       crf="$OPTARG" #quality level
-      echo "-r was triggered, Parameter: $OPTARG" >&2
+      #echo "-r was triggered, Parameter: $OPTARG" >&2
       ;;
     w)
       cropW="$OPTARG"
-      echo "-w was triggered, Parameter: $OPTARG" >&2
+      #echo "-w was triggered, Parameter: $OPTARG" >&2
       ;;
     h)
       cropH="$OPTARG"
-      echo "-h was triggered, Parameter: $OPTARG" >&2
+      #echo "-h was triggered, Parameter: $OPTARG" >&2
       ;;
     l)
       scale="$OPTARG" #width of how much you want to scale video by. width:-1
-      echo "-l was triggered, Parameter: $OPTARG" >&2
+      #echo "-l was triggered, Parameter: $OPTARG" >&2
       ;;
     r)
       crf="$OPTARG" #width of how much you want to scale video by. width:-1
-      echo "-l was triggered, Parameter: $OPTARG" >&2
+      #echo "-l was triggered, Parameter: $OPTARG" >&2
       ;;
     a)
       audio="an" #fps of gif
-      echo "-a was triggered, Parameter: $OPTION"
+      #echo "-a was triggered, Parameter: $OPTION"
       ;;
     :)
       echo "Option -$OPTARG requires an argument." >&2
