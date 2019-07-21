@@ -1,6 +1,4 @@
 #!/usr/bin/env bash
-#Cut a clip given input, start point, and duration
-
 if [ "$#" -eq 0 ]; then
   echo "Usage: $(basename $0) [-i video input file] [-o output path] [-s start time] [-t duration] [-v subtitle type] [-c subtitle stream choice] [-w crop width] [-h crop height] [-l scale width] [-z video bitrate size in MB] [-r crf value] [-a no audio]" >&2
   exit 0
@@ -77,6 +75,17 @@ fastSub=0
 if [[ ! -e $fileIn ]]; then
         echo "That's not a file"
         exit 1
+fi
+
+if [ -z "$outVid" ]; then
+	echo "No output file. Use [-o <output filepath>]"
+  exit 1
+fi
+if [ -z "$start" ]; then
+	start="0"
+fi
+if [ -z "$dur" ]; then
+	dur="10"
 fi
 
 if [[ -z "$cropW" ]]; then
@@ -171,16 +180,6 @@ base=${fileIn##*/}
 name=${base%.*}
 dir=${fileIn%$base}
 ext=${base#$name.}
-
-if [ -z "$outVid" ]; then
-	outVid="$dir$name-cut.$ext"
-fi
-if [ -z "$start" ]; then
-	start="0"
-fi
-if [ -z "$dur" ]; then
-	dur="10"
-fi
 
 ffBeg="ffmpeg -hide_banner -y"
 ffStart="-ss $clipStart"

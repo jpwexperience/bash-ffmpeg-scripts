@@ -76,6 +76,17 @@ if [[ ! -e $fileIn ]]; then
         exit 1
 fi
 
+if [ -z "$outVid" ]; then
+  echo "No output file. Use [-o <output filepath>]"
+  exit 1
+fi
+if [ -z "$start" ]; then
+	start="0"
+fi
+if [ -z "$dur" ]; then
+	dur="10"
+fi
+
 if [[ -z "$cropW" ]]; then
 	cropW="-1"
 fi
@@ -166,16 +177,6 @@ base=${fileIn##*/}
 name=${base%.*}
 dir=${fileIn%$base}
 ext=${base#$name.}
-
-if [ -z "$outVid" ]; then
-	outVid="$dir$name-cut.$ext"
-fi
-if [ -z "$start" ]; then
-	start="0"
-fi
-if [ -z "$dur" ]; then
-	dur="10"
-fi
 
 ffBeg="ffmpeg -hide_banner -y"
 ffStart="-ss $clipStart"

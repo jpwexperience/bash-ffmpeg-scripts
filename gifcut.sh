@@ -73,6 +73,27 @@ if [[ ! -e $fileIn ]]; then
 	exit 1
 fi
 
+if [ -z "$outGif" ]; then
+	echo "No output file. Use [-o <output filepath>]"
+  exit 1
+fi
+
+if [ -z "$clipStart" ]; then
+	clipStart=0
+fi
+
+if [ -z "$dur" ]; then
+	dur=5
+fi
+
+if [ -z "$crf" ]; then
+	crf=26
+fi
+
+if [ -z "$fpsValue" ]; then
+	fpsValue="10"
+fi
+
 if [[ -z "$cropW" ]]; then
         cropW="-1"
 fi
@@ -167,31 +188,6 @@ pal="$name-togif-palette"
 gifPal="gif-palette"
 palettePath="$dir$pal.png"
 outPath="$outGif"
-
-if [ -z "$outGif" ]; then
-	outPath="$dir$name-togif.gif"
-else
-	gifBase=${outGif##*/}
-	gifDir=${outGif%$gifBase}
-	outPath="$outGif"
-	palettePath="$dir$pal.png"
-fi
-
-if [ -z "$clipStart" ]; then
-	clipStart=0
-fi
-
-if [ -z "$dur" ]; then
-	dur=5
-fi
-
-if [ -z "$crf" ]; then
-	crf=26
-fi
-
-if [ -z "$fpsValue" ]; then
-	fpsValue="10"
-fi
 
 if [ -z "$scaleFactor" ]; then
 	palette="-vf fps=$fpsValue,scale=-1:-1:flags=lanczos,palettegen \"$palettePath\""
