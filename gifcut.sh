@@ -87,7 +87,7 @@ if [ -z "$dur" ]; then
 fi
 
 if [ -z "$crf" ]; then
-	crf=26
+	crf=10
 fi
 
 if [ -z "$fpsValue" ]; then
