@@ -2,7 +2,7 @@
 #Does accept multiple inputs but they are run sequentially
 
 if [ "$#" -eq 0 ]; then
-  echo "Usage: $(basename $0) <input videos> " >&2
+  echo "Usage: $(basename $0) <infile-1> <infile-2> ..." >&2
   exit 0
 fi
 

@@ -1,62 +1,60 @@
 #!/usr/bin/env bash
 
 if [ "$#" -eq 0 ]; then
-	echo "Usage: $(basename $0) [-i video input file] [-o output path] [-s start time] [-t duration] [-v subtitle type] [-c subtitle stream choice] [-w crop width] [-h crop height] [-l scale width] [-f fps value] [-r crf value]" >&2
-	exit 0
+	echo "Usage: $(basename $0) [-i <infile>] [-o <outfile>] [options]" >&2
+	echo "For Option List use: $(basename $0) -h" >&2
+	exit 1
 fi
 
-while getopts i:o:s:t:v:c:w:h:l:f:r: opt; do
+while getopts i:o:s:t:v:c:w:e:l:f:r:hg opt; do
   case $opt in
     i)
       fileIn="$OPTARG" #Video input file
-      #echo "-i was triggered, Parameter: $OPTARG" >&2
       ;;
     o)
       outGif="$OPTARG" #path and name of output gif
-      #echo "-o was triggered, Parameter: $OPTARG" >&2
       ;;
     s)
       clipStart="$OPTARG" #start time
-      #echo "-s was triggered, Parameter: $OPTARG" >&2
       ;;
     t)
       dur="$OPTARG" #clip duration
-      #echo "-t was triggered, Parameter: $OPTARG" >&2
       ;;
     v)
       subType="$OPTARG" #e or i for external and interal respectively
-      #echo "-v was triggered, Parameter: $OPTARG" >&2
       ;;
     c)
       subChoice="$OPTARG"
-      #echo "-c was triggered, Parameter: $OPTARG" >&2
       ;;
     r)
       crf="$OPTARG" #quality level
-      #echo "-r was triggered, Parameter: $OPTARG" >&2
       ;;
     w)
       cropW="$OPTARG"
-      #echo "-w was triggered, Parameter: $OPTARG" >&2
       ;;
-    h)
+    e)
       cropH="$OPTARG"
-      #echo "-h was triggered, Parameter: $OPTARG" >&2
       ;;
     l)
       scaleFactor="$OPTARG" #width of how much you want to scale video by. width:-1
-      #echo "-l was triggered, Parameter: $OPTARG" >&2
       ;;
     f)
       fpsValue="$OPTARG" #fps of gif
-      #echo "-f was triggered, Parameter: $OPTION"
+      ;;
+    h)
+      HELP="1" #list script options
+      ;;
+    g)
+      noRun="1" #show command only
       ;;
     :)
       echo "Option -$OPTARG requires an argument." >&2
+      echo "For Option List use: $(basename $0) -h" >&2
       exit 1
       ;;
     ?)
-      echo "Usage: $(basename $0) [-i video input file] [-o output path] [-s start time] [-t duration] [-v subtitle type] [-c subtitle stream choice] [-w crop width] [-h crop height] [-l scale width] [-f fps value] [-r crf value]" >&2
+      echo "Usage: $(basename $0) [-i <infile>] [-o <outfile>] [options]" >&2
+      echo "For Option List use: $(basename $0) -h" >&2
       exit 1
       ;;
   esac
@@ -67,9 +65,30 @@ subtitleCmd=""
 fastSub=0
 tempCut=""
 
+if [ ! -z "$HELP" ]; then
+	echo "Usage: $(basename $0) [-i <infile>] [-o <outfile>] [options]"
+	echo -e "\nOptions:"
+	echo -e "-h\t\t\tList available options"
+	echo -e "-g\t\t\tOnly show generated commands"
+	echo -e "-s start\t\tClip start time in seconds or timecode (00:00:00.00) [default: 0]"
+	echo -e "-t duration\t\tClip duration time in seconds or timecode (00:00:00.00) [default: 10]"
+	echo -e "-v ( i | e )\t\tVideo subtitle type. Internal (i) or External (e)"
+	echo -e "-c subchoice\t\tVideo subtitle stream choice or path to external subtitle file"
+	echo -e "-w width\t\tWidth cropping in pixels"
+	echo -e "-e height\t\tHeight cropping in pixels"
+	echo -e "-l scale\t\tWidth to scale video by in pixels"
+	echo -e "-r crf\t\t\tQuality level for x264 encoding. Lower # = Higher Quality. 18-32 is sane range [default: 10]"
+	echo -e "-f fps\t\t\tFrames per second of final gif [default: 23]"
+	exit 0
+fi
+
+if [ -z "$noRun" ]; then
+	noRun="0"
+fi
 
 if [[ ! -e $fileIn ]]; then
-	echo "$fileIn is not a file"
+	echo "$fileIn is not a file" >&2
+	echo "Usage: $(basename $0) [-i <infile>] [-o <outfile>] [options]" >&2
 	exit 1
 fi
 
@@ -222,22 +241,39 @@ else
 fi
 
 
-echo -e "\nGenerating Clip\n$tempCut\n"
-eval $tempCut
+if [[ "$noRun" == 0 ]]; then
+	echo -e "\nGenerating Clip\n$tempCut\n"
+	eval $tempCut
 
-ffBegin="ffmpeg -analyzeduration 100M -probesize 500k -hide_banner -y -i \"$tempClip\""
-paletteGen="$ffBegin $palette"
-echo -e "Generating Palette\n$paletteGen\n"
-eval $paletteGen
+	ffBegin="ffmpeg -analyzeduration 100M -probesize 500k -hide_banner -y -i \"$tempClip\""
+	paletteGen="$ffBegin $palette"
+	echo -e "Generating Palette\n$paletteGen\n"
+	eval $paletteGen
 
-gifCreate="$ffBegin -i \"$palettePath\" $gifPalette"
-echo -e "Creating Gif\n$gifCreate\n"
-eval $gifCreate
+	gifCreate="$ffBegin -i \"$palettePath\" $gifPalette"
+	echo -e "Creating Gif\n$gifCreate\n"
+	eval $gifCreate
 
-clipRm="rm \"$tempClip\""
-echo -e "Removing Temporary Clip\n$clipRm\n"
-eval $clipRm
+	clipRm="rm \"$tempClip\""
+	echo -e "Removing Temporary Clip\n$clipRm\n"
+	eval $clipRm
 
-palRm="rm \"$palettePath\""
-echo -e "Removing Palette\n$palRm\n"
-eval $palRm
+	palRm="rm \"$palettePath\""
+	echo -e "Removing Palette\n$palRm\n"
+	eval $palRm
+else
+	echo -e "\nGenerating Clip\n$tempCut\n"
+	ffBegin="ffmpeg -analyzeduration 100M -probesize 500k -hide_banner -y -i \"$tempClip\""
+	paletteGen="$ffBegin $palette"
+	echo -e "Generating Palette\n$paletteGen\n"
+
+	gifCreate="$ffBegin -i \"$palettePath\" $gifPalette"
+	echo -e "Creating Gif\n$gifCreate\n"
+
+	clipRm="rm \"$tempClip\""
+	echo -e "Removing Temporary Clip\n$clipRm\n"
+
+	palRm="rm \"$palettePath\""
+	echo -e "Removing Palette\n$palRm\n"
+fi
+

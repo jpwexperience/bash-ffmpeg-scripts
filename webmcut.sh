@@ -1,79 +1,93 @@
 #!/usr/bin/env bash
 if [ "$#" -eq 0 ]; then
-  echo "Usage: $(basename $0) [-i video input file] [-o output path] [-s start time] [-t duration] [-v subtitle type] [-c subtitle stream choice] [-w crop width] [-h crop height] [-l scale width] [-z video bitrate size in MB] [-r crf value] [-a no audio]" >&2
+  echo "Usage: $(basename $0) [-i <infile>] [-o <outfile>] [options]" >&2
+  echo "For Option List use: $(basename $0) -h"
   exit 0
 fi
 
-while getopts i:o:s:t:v:c:w:h:l:f:z:a opt; do
+while getopts i:o:s:t:v:c:w:e:l:z:ahg opt; do
   case $opt in
     i)
       fileIn="$OPTARG"
-      #echo "-i was triggered, Parameter: $OPTARG" >&2
       ;;
     o)
       outVid="$OPTARG" #path and name of output gif
-      #echo "-o was triggered, Parameter: $OPTARG" >&2
       ;;
     s)
       clipStart="$OPTARG" #start time
-      #echo "-s was triggered, Parameter: $OPTARG" >&2
       ;;
     t)
       dur="$OPTARG" #clip duration
-      #echo "-t was triggered, Parameter: $OPTARG" >&2
       ;;
     v)
       subType="$OPTARG" #e or i for external and interal respectively
-      #echo "-v was triggered, Parameter: $OPTARG" >&2
       ;;
     c)
       subChoice="$OPTARG"
-      #echo "-c was triggered, Parameter: $OPTARG" >&2
       ;;
     r)
       crf="$OPTARG" #quality level
-      #echo "-r was triggered, Parameter: $OPTARG" >&2
       ;;
     w)
       cropW="$OPTARG"
-      #echo "-w was triggered, Parameter: $OPTARG" >&2
       ;;
-    h)
+    e)
       cropH="$OPTARG"
-      #echo "-h was triggered, Parameter: $OPTARG" >&2
       ;;
     l)
       scale="$OPTARG" #width of how much you want to scale video by. width:-1
-      #echo "-l was triggered, Parameter: $OPTARG" >&2
       ;;
     z)
       size="$OPTARG" #fps of gif
-      #echo "-z was triggered, Parameter: $OPTARG"
       ;;
     a)
-      audio="an" #fps of gif
-      #echo "-a was triggered, Parameter: $OPTION"
+      audio="an" #remove audio
+      ;;
+    h)
+      HELP="1" #list options
+      ;;
+    g)
+      noRun="1" #show command only
       ;;
     :)
       echo "Option -$OPTARG requires an argument." >&2
+      echo "For Option List use: $(basename $0) -h" >&2
       exit 1
       ;;
     ?)
-      echo "Usage: $(basename $0) [-i video input file] [-o output path] [-s start time] [-t duration] [-v subtitle type] [-c subtitle stream choice] [-w crop width] [-h crop height] [-l scale width] [-z video bitrate size in MB] [-r crf value] [-a no audio]" >&2
+      echo "Usage: $(basename $0) [-i <infile>] [-o <outfile>] [options]" >&2
+      echo "For Option List use: $(basename $0) -h"
       exit 1
       ;;
   esac
 done
 shift "$(($OPTIND -1))"
-#echo -e "File In: $fileIn\nOut Gif: $outGif\nStart: $clipStart\nDur: $dur\nSub Type:$subType\nSub Choice:$subChoice\nCRF: $crf\nCrop W: $cropW\nCrop H: $cropH\nScale Factor:$scaleFactor\nFPS: $fpsValue"
 
-crf="10" #quality level
-subArr=()
-subtitleCmd=""
-fastSub=0
+if [ ! -z "$HELP" ]; then
+	echo "Usage: $(basename $0) [-i <infile>] [-o <outfile>] [options]" 
+	echo -e "\nOptions:"
+	echo -e "-h\t\t\tList available options"
+	echo -e "-a\t\t\tExclude audio from final clip"
+	echo -e "-g\t\t\tOnly show generated commands"
+	echo -e "-s start\t\tClip start time in seconds or timecode (00:00:00.00) [default: 0]"
+	echo -e "-t duration\t\tClip duration time in seconds or timecode (00:00:00.00) [default: 10]"
+	echo -e "-v ( i | e )\t\tVideo subtitle type. Internal (i) or External (e)"
+	echo -e "-c subchoice\t\tVideo subtitle stream choice or path to external subtitle file"
+	echo -e "-w width\t\tWidth cropping in pixels"
+	echo -e "-e height\t\tHeight cropping in pixels"
+	echo -e "-l scale\t\tWidth to scale video by in pixels"
+	echo -e "-r crf\t\t\tQuality level for x264 encoding. Lower # = Higher Quality. 18-32 is sane range [default: 10]"
+	echo -e "-z bitrate\t\tBitrate of resulting webM in MB [default: 0.35MB]"
+	exit 0
+fi
+
+if [ -z "$noRun" ]; then
+	noRun="0"
+fi
 
 if [[ ! -e $fileIn ]]; then
-        echo "That's not a file"
+        echo "$fileIn is not a file" >&2
+	echo "Usage: $(basename $0) [-i <infile>] [-o <outfile>] [options]" >&2
         exit 1
 fi
 
@@ -81,9 +95,11 @@ if [ -z "$outVid" ]; then
 	echo "No output file. Use [-o <output filepath>]"
   exit 1
 fi
+
 if [ -z "$start" ]; then
 	start="0"
 fi
+
 if [ -z "$dur" ]; then
 	dur="10"
 fi
@@ -91,23 +107,38 @@ fi
 if [[ -z "$cropW" ]]; then
 	cropW="-1"
 fi
+
 if [[ -z "$cropH" ]]; then
 	cropH="-1"
 fi
+
 if [[ -z "$scale" ]]; then
 	scale="-1"
 fi
+
 if [[ -z "$subType" ]]; then
 	subType="n"
 fi
+
 if [[ -z "$subChoice" ]]; then
 	subChoice="n"
 fi
+
 if [[ -z "$size" ]]; then
 	size="0.35M"
 else
 	size="$size""M"
 fi
+
+if [[ -z "$crf" ]]; then
+	crf="10"
+fi
+
+subArr=()
+subtitleCmd=""
+fastSub=0
+
+
 
 ####Subtitle Stuff
 if [[ "$subType" == "i" ]]; then
@@ -245,5 +276,9 @@ else
         fi
 fi
 
-echo -e "\nGenerating Clip\n$cutCmd\n"
-eval $cutCmd
+if [[ "$noRun" == 0 ]]; then
+	echo -e "\nGenerating Clip\n$cutCmd\n"
+	eval $cutCmd
+else
+	echo -e "\nGenerating Clip\n$cutCmd\n"
+fi
