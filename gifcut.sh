@@ -6,7 +6,7 @@ if [ "$#" -eq 0 ]; then
 	exit 1
 fi
 
-while getopts i:o:s:t:v:c:w:e:l:f:r:hg opt; do
+while getopts i:o:s:t:v:c:w:e:l:f:r:hgk opt; do
   case $opt in
     i)
       fileIn="$OPTARG" #Video input file
@@ -47,6 +47,9 @@ while getopts i:o:s:t:v:c:w:e:l:f:r:hg opt; do
     g)
       noRun="1" #show command only
       ;;
+    k)
+      keep="1" #show command only
+      ;;
     :)
       echo "Option -$OPTARG requires an argument." >&2
       echo "For Option List use: $(basename $0) -h" >&2
@@ -70,6 +73,7 @@ if [ ! -z "$HELP" ]; then
 	echo -e "\nOptions:"
 	echo -e "-h\t\t\tList available options"
 	echo -e "-g\t\t\tOnly show generated commands"
+	echo -e "-k\t\t\tKeep temporary clips"
 	echo -e "-s start\t\tClip start time in seconds or timecode (00:00:00.00) [default: 0]"
 	echo -e "-t duration\t\tClip duration time in seconds or timecode (00:00:00.00) [default: 10]"
 	echo -e "-v ( i | e )\t\tVideo subtitle type. Internal (i) or External (e)"
@@ -130,6 +134,9 @@ if [[ -z "$scaleFactor" ]]; then
 fi
 if [[ -z "$fpsValue" ]]; then
         fpsValue="23"
+fi
+if [[ -z "$keep" ]]; then
+        keep="0"
 fi
 
 ####Subtitle Stuff
@@ -254,13 +261,15 @@ if [[ "$noRun" == 0 ]]; then
 	echo -e "Creating Gif\n$gifCreate\n"
 	eval $gifCreate
 
-	clipRm="rm \"$tempClip\""
-	echo -e "Removing Temporary Clip\n$clipRm\n"
-	eval $clipRm
+	if [[ "$keep" == 0 ]]; then
+		clipRm="rm \"$tempClip\""
+		echo -e "Removing Temporary Clip\n$clipRm\n"
+		eval $clipRm
 
-	palRm="rm \"$palettePath\""
-	echo -e "Removing Palette\n$palRm\n"
-	eval $palRm
+		palRm="rm \"$palettePath\""
+		echo -e "Removing Palette\n$palRm\n"
+		eval $palRm
+	fi
 else
 	echo -e "\nGenerating Clip\n$tempCut\n"
 	ffBegin="ffmpeg -analyzeduration 100M -probesize 500k -hide_banner -y -i \"$tempClip\""
