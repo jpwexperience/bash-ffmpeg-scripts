@@ -131,31 +131,41 @@ fi
 if [[ -z "$fpsValue" ]]; then
         fpsValue="23"
 fi
+if [[ -z "$subChoice" ]]; then
+	subChoice="0"
+fi
+
+#let finalHeight=($scaleFactor*$cropH)/$cropW
+echo -e "\nWidth:$cropW Height: $cropH Scale: $scaleFactor\n"
+
+info="$(ffprobe -analyzeduration 100M -probesize 500K -i "$fileIn" -hide_banner 2>&1)"
+IFS='\n' read -ra ADDR <<< "$info"
+ffprobeOut=()
+ffprobeOutSize=${#ffprobeOut[@]}
+
+#read each line of ffprobe output
+#for line in "${ffprobeOut[@]}"; do
+while read -r line; do
+	ffprobeOut+=("$line")
+done <<< "$info"
+outLen=${#ffprobeOut[@]}
+for ((i = 0; i < $outLen; i++)); do
+	line=${ffprobeOut[i]}
+	if [[ $line =~ (S|s)"tream"(.*) ]]; then
+		echo "AYY"
+		if [[ $line =~ (.*)(: )(S|s)"ubtitle"(.*) ]]; then
+			subArr+=("$line")
+		fi
+		#get source video dimensions
+		if [[ $line =~ (.*)(: )(V|v)"ideo"(.*) ]]; then
+			echo "$line"
+			
+		fi
+	fi
+done
 
 ####Subtitle Stuff
 if [[ "$subType" == "i" ]]; then
-	if [[ -z "$subChoice" ]]; then
-		subChoice="0"
-	fi
-	info="$(ffprobe -analyzeduration 100M -probesize 500K -i "$fileIn" -hide_banner 2>&1)"
-	IFS='\n' read -ra ADDR <<< "$info"
-	ffprobeOut=()
-	ffprobeOutSize=${#ffprobeOut[@]}
-
-	#read each line of ffprobe output
-	#for line in "${ffprobeOut[@]}"; do
-	while read -r line; do
-		ffprobeOut+=("$line")
-	done <<< "$info"
-	outLen=${#ffprobeOut[@]}
-	for ((i = 0; i < $outLen; i++)); do
-		line=${ffprobeOut[i]}
-		if [[ $line =~ (S|s)"tream"(.*) ]]; then
-			if [[ $line =~ (.*)(: )(S|s)"ubtitle"(.*) ]]; then
-				subArr+=("$line")
-			fi
-		fi
-	done
 	if (( ${#subArr[@]} > 0 )); then
 		subStream=${subArr[subChoice]}
 		if [[ $subStream =~ (.*)(hdmv|dvd_subtitle)(.*) ]]; then
@@ -179,19 +189,19 @@ if [[ "$subType" == "i" ]]; then
 		fi
 	fi
 else
-	if [[ "$subType" == "e" ]]; then
-		if [[ -z "$subChoice" ]]; then
-			echo -e "\nNo subtitle path given\n"
-			exit 1
+if [[ "$subType" == "e" ]]; then
+	if [[ -z "$subChoice" ]]; then
+		echo -e "\nNo subtitle path given\n"
+		exit 1
+	else
+		if [[ "$cropW" == "-1" ]]; then
+			subtitleCmd="-vf \"subtitles=$subChoice, scale=$scaleFactor:-1\""
 		else
-			if [[ "$cropW" == "-1" ]]; then
-				subtitleCmd="-vf \"subtitles=$subChoice, scale=$scaleFactor:-1\""
-			else
-				subtitleCmd="-vf \"crop=$cropW:$cropH, subtitles=$subChoice, scale=$scaleFactor:-1\""
-			fi
+			subtitleCmd="-vf \"crop=$cropW:$cropH, subtitles=$subChoice, scale=$scaleFactor:-1\""
 		fi
-
 	fi
+
+fi
 fi
 ####
 
@@ -202,6 +212,8 @@ dir=${fileIn%$base}
 
 temp="$name-temp-clip"
 tempClip="$dir$temp.mp4"
+tempClipRev="$dir$temp-reverse.mp4"
+tempClipCat="$dir$temp-cat.mp4"
 
 pal="$name-togif-palette"
 gifPal="gif-palette"
@@ -240,22 +252,31 @@ else
 	fi
 fi
 
-
+ffBegin="ffmpeg -analyzeduration 100M -probesize 500k -hide_banner -y -i"
 if [[ "$noRun" == 0 ]]; then
 	echo -e "\nGenerating Clip\n$tempCut\n"
 	eval $tempCut
+	
+	#reverse
+	tempRev="$ffBegin \"$tempClip\" -vf reverse \"$tempClipRev\""
+	echo -e "\nReverse Clip\n$tempRev\n"
+	eval $tempRev
 
-	ffBegin="ffmpeg -analyzeduration 100M -probesize 500k -hide_banner -y -i \"$tempClip\""
-	paletteGen="$ffBegin $palette"
+	#concat
+	tempCat="$ffBegin \"$tempClip\" -i \"$tempClipRev\" -filter_complex \"[0:v:0][1:v:0]concat=n=2:v=1[v]\" -map \"[v]\" \"$tempClipCat\""
+	echo -e "\nConcat Clips\n$tempCat\n"
+	eval $tempCat
+
+	paletteGen="$ffBegin \"$tempClipCat\" $palette"
 	echo -e "Generating Palette\n$paletteGen\n"
 	eval $paletteGen
 
-	gifCreate="$ffBegin -i \"$palettePath\" $gifPalette"
+	gifCreate="$ffBegin \"$tempClipCat\" -i \"$palettePath\" $gifPalette"
 	echo -e "Creating Gif\n$gifCreate\n"
 	eval $gifCreate
 
-	clipRm="rm \"$tempClip\""
-	echo -e "Removing Temporary Clip\n$clipRm\n"
+	clipRm="rm \"$tempClip\"; rm \"$tempClipRev\"; rm \"$tempClipCat\""
+	echo -e "Removing Temporary Clips\n$clipRm\n"
 	eval $clipRm
 
 	palRm="rm \"$palettePath\""
@@ -263,14 +284,22 @@ if [[ "$noRun" == 0 ]]; then
 	eval $palRm
 else
 	echo -e "\nGenerating Clip\n$tempCut\n"
-	ffBegin="ffmpeg -analyzeduration 100M -probesize 500k -hide_banner -y -i \"$tempClip\""
-	paletteGen="$ffBegin $palette"
+
+	#reverse
+	tempRev="$ffBegin \"$tempClip\" -vf reverse \"$tempClipRev\""
+	echo -e "\nReverse Clip\n$tempRev\n"
+
+	#concat
+	tempCat="$ffBegin \"$tempClip\" -i \"$tempClipRev\" -filter_complex \"[0:v] [0:a] [1:v] [1:a] concat=n=2:v=1:a=1 [v] [a]\" -map \"[v]\" -map \"[a]\" \"$tempClipCat\""
+	echo -e "\nConcat Clips\n$tempCat\n"
+		
+	paletteGen="$ffBegin \"$tempClipCat\" $palette"
 	echo -e "Generating Palette\n$paletteGen\n"
 
-	gifCreate="$ffBegin -i \"$palettePath\" $gifPalette"
+	gifCreate="$ffBegin \"$tempClipCat\" -i \"$palettePath\" $gifPalette"
 	echo -e "Creating Gif\n$gifCreate\n"
 
-	clipRm="rm \"$tempClip\""
+	clipRm="rm \"$tempClip\"; rm \"$tempClipRev\"; rm \"$tempClipCat\""
 	echo -e "Removing Temporary Clip\n$clipRm\n"
 
 	palRm="rm \"$palettePath\""
