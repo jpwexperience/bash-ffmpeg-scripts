@@ -142,9 +142,6 @@ if [[ -z "$keep" ]]; then
 	keep="0"
 fi
 
-#let finalHeight=($scaleFactor*$cropH)/$cropW
-echo -e "\nWidth:$cropW Height: $cropH Scale: $scaleFactor\n"
-
 info="$(ffprobe -analyzeduration 100M -probesize 500K -i "$fileIn" -hide_banner 2>&1)"
 IFS='\n' read -ra ADDR <<< "$info"
 ffprobeOut=()
@@ -164,11 +161,28 @@ for ((i = 0; i < $outLen; i++)); do
 		fi
 		#get source video dimensions
 		if [[ $line =~ (.*)(: )(V|v)"ideo"(.*) ]]; then
-			echo "$line"
-			
+			# % - suffix
+			# # - prefix
+			nums=', [0-9]+x[0-9]+'
+			if [[ $line =~ $nums ]]; then 
+				fullDim=${BASH_REMATCH[0]}
+				fullDim=${fullDim#', '}
+				if [[ "$cropW" == "-1" ]]; then
+					cropW=${fullDim%x*}
+				fi
+				if [[ "$cropH" == "-1" ]]; then
+					cropH=${fullDim#*x}	
+				fi
+			else
+				echo "Can't find video dimensions"
+			fi
+			echo -e "line: $line\n\nWidth: $cropW Height: $cropH"
 		fi
 	fi
 done
+
+let finalHeight=($scaleFactor*$cropH)/$cropW
+echo -e "\nWidth:$cropW Height: $cropH Scale: $scaleFactor\nFinal Height: $finalHeight"
 
 ####Subtitle Stuff
 if [[ "$subType" == "i" ]]; then
