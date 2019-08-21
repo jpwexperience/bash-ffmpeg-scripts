@@ -139,30 +139,65 @@ if [[ -z "$keep" ]]; then
         keep="0"
 fi
 
+info="$(ffprobe -analyzeduration 100M -probesize 500K -i "$fileIn" -hide_banner 2>&1)"
+IFS='\n' read -ra ADDR <<< "$info"
+ffprobeOut=()
+ffprobeOutSize=${#ffprobeOut[@]}
+
+#read each line of ffprobe output
+#for line in "${ffprobeOut[@]}"; do
+while read -r line; do
+	ffprobeOut+=("$line")
+done <<< "$info"
+outLen=${#ffprobeOut[@]}
+for ((i = 0; i < $outLen; i++)); do
+	line=${ffprobeOut[i]}
+	if [[ $line =~ (S|s)"tream"(.*) ]]; then
+		if [[ $line =~ (.*)(: )(S|s)"ubtitle"(.*) ]]; then
+			subArr+=("$line")
+		fi
+		#get source video dimensions
+		if [[ $line =~ (.*)(: )(V|v)"ideo"(.*) ]]; then
+			# % - suffix
+			# # - prefix
+			nums=', [0-9]+x[0-9]+'
+			if [[ $line =~ $nums ]]; then
+				fullDim=${BASH_REMATCH[0]}
+				fullDim=${fullDim#', '}
+				if [[ "$cropW" == "-1" ]]; then
+					cropW=${fullDim%x*}
+				fi
+				if [[ "$cropH" == "-1" ]]; then
+					cropH=${fullDim#*x}
+				fi
+				if [[ "$scaleFactor" == "-1" ]]; then
+					scaleFactor=${fullDim%x*}
+				fi
+			else
+				echo "Can't find video dimensions"
+			fi
+			echo -e "line: $line\n\nWidth: $cropW Height: $cropH"
+		fi
+	fi
+done
+
+let finalHeight="(($scaleFactor*$cropH)/$cropW)"
+#echo -e "\nWidth:$cropW Height: $cropH Scale: $scaleFactor\nFinal Height: $finalHeight"
+while (( $finalHeight % 2 == 0 )); do
+	echo "Hey bud, $finalHeight % 2 == 0"
+	let finalHeight++
+	if (( $scaleFactor % 2 == 0 )); then
+		let "scaleFactor = $scaleFactor + 2";
+	else
+		let "scaleFactor = $scaleFactor + 1";
+	fi
+	let finalHeight=($scaleFactor*$cropH)/$cropW
+done
+
+#echo -e "Actual Final\nWidth:$cropW Height: $cropH Scale: $scaleFactor\nFinal Height: $finalHeight"
+
 ####Subtitle Stuff
 if [[ "$subType" == "i" ]]; then
-	if [[ -z "$subChoice" ]]; then
-		subChoice="0"
-	fi
-	info="$(ffprobe -analyzeduration 100M -probesize 500K -i "$fileIn" -hide_banner 2>&1)"
-	IFS='\n' read -ra ADDR <<< "$info"
-	ffprobeOut=()
-	ffprobeOutSize=${#ffprobeOut[@]}
-
-	#read each line of ffprobe output
-	#for line in "${ffprobeOut[@]}"; do
-	while read -r line; do
-		ffprobeOut+=("$line")
-	done <<< "$info"
-	outLen=${#ffprobeOut[@]}
-	for ((i = 0; i < $outLen; i++)); do
-		line=${ffprobeOut[i]}
-		if [[ $line =~ (S|s)"tream"(.*) ]]; then
-			if [[ $line =~ (.*)(: )(S|s)"ubtitle"(.*) ]]; then
-				subArr+=("$line")
-			fi
-		fi
-	done
 	if (( ${#subArr[@]} > 0 )); then
 		subStream=${subArr[subChoice]}
 		if [[ $subStream =~ (.*)(hdmv|dvd_subtitle)(.*) ]]; then
@@ -186,19 +221,19 @@ if [[ "$subType" == "i" ]]; then
 		fi
 	fi
 else
-	if [[ "$subType" == "e" ]]; then
-		if [[ -z "$subChoice" ]]; then
-			echo -e "\nNo subtitle path given\n"
-			exit 1
+if [[ "$subType" == "e" ]]; then
+	if [[ -z "$subChoice" ]]; then
+		echo -e "\nNo subtitle path given\n"
+		exit 1
+	else
+		if [[ "$cropW" == "-1" ]]; then
+			subtitleCmd="-vf \"subtitles=$subChoice, scale=$scaleFactor:-1\""
 		else
-			if [[ "$cropW" == "-1" ]]; then
-				subtitleCmd="-vf \"subtitles=$subChoice, scale=$scaleFactor:-1\""
-			else
-				subtitleCmd="-vf \"crop=$cropW:$cropH, subtitles=$subChoice, scale=$scaleFactor:-1\""
-			fi
+			subtitleCmd="-vf \"crop=$cropW:$cropH, subtitles=$subChoice, scale=$scaleFactor:-1\""
 		fi
-
 	fi
+
+fi
 fi
 ####
 
@@ -285,4 +320,3 @@ else
 	palRm="rm \"$palettePath\""
 	echo -e "Removing Palette\n$palRm\n"
 fi
-

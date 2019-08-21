@@ -187,7 +187,6 @@ done
 let finalHeight="(($scaleFactor*$cropH)/$cropW)"
 #echo -e "\nWidth:$cropW Height: $cropH Scale: $scaleFactor\nFinal Height: $finalHeight"
 while (( $finalHeight % 2 == 0 )); do
-	echo "Hey bud, $finalHeight % 2 == 0"
 	let finalHeight++
 	if (( $scaleFactor % 2 == 0 )); then
 		let "scaleFactor = $scaleFactor + 2";
