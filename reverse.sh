@@ -173,6 +173,9 @@ for ((i = 0; i < $outLen; i++)); do
 				if [[ "$cropH" == "-1" ]]; then
 					cropH=${fullDim#*x}	
 				fi
+				if [[ "$scaleFactor" == "-1" ]]; then
+					scaleFactor=${fullDim%x*}
+				fi
 			else
 				echo "Can't find video dimensions"
 			fi
@@ -181,8 +184,20 @@ for ((i = 0; i < $outLen; i++)); do
 	fi
 done
 
-let finalHeight=($scaleFactor*$cropH)/$cropW
-echo -e "\nWidth:$cropW Height: $cropH Scale: $scaleFactor\nFinal Height: $finalHeight"
+let finalHeight="(($scaleFactor*$cropH)/$cropW)"
+#echo -e "\nWidth:$cropW Height: $cropH Scale: $scaleFactor\nFinal Height: $finalHeight"
+while (( $finalHeight % 2 == 0 )); do
+	echo "Hey bud, $finalHeight % 2 == 0"
+	let finalHeight++
+	if (( $scaleFactor % 2 == 0 )); then
+		let "scaleFactor = $scaleFactor + 2";
+	else
+		let "scaleFactor = $scaleFactor + 1";
+	fi
+	let finalHeight=($scaleFactor*$cropH)/$cropW
+done
+
+#echo -e "Actual Final\nWidth:$cropW Height: $cropH Scale: $scaleFactor\nFinal Height: $finalHeight"
 
 ####Subtitle Stuff
 if [[ "$subType" == "i" ]]; then
