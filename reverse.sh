@@ -99,6 +99,8 @@ fi
 if [ -z "$outGif" ]; then
 	echo "No output file. Use [-o <output filepath>]"
   exit 1
+else
+	outExt=${outGif##?*.}
 fi
 
 if [ -z "$clipStart" ]; then
@@ -164,14 +166,14 @@ for ((i = 0; i < $outLen; i++)); do
 			# % - suffix
 			# # - prefix
 			nums=', [0-9]+x[0-9]+'
-			if [[ $line =~ $nums ]]; then 
+			if [[ $line =~ $nums ]]; then
 				fullDim=${BASH_REMATCH[0]}
 				fullDim=${fullDim#', '}
 				if [[ "$cropW" == "-1" ]]; then
 					cropW=${fullDim%x*}
 				fi
 				if [[ "$cropH" == "-1" ]]; then
-					cropH=${fullDim#*x}	
+					cropH=${fullDim#*x}
 				fi
 				if [[ "$scaleFactor" == "-1" ]]; then
 					scaleFactor=${fullDim%x*}
@@ -290,7 +292,7 @@ ffBegin="ffmpeg -analyzeduration 100M -probesize 500k -hide_banner -y -i"
 if [[ "$noRun" == 0 ]]; then
 	echo -e "\nGenerating Clip\n$tempCut\n"
 	eval $tempCut
-	
+
 	#reverse
 	tempRev="$ffBegin \"$tempClip\" -vf reverse \"$tempClipRev\""
 	echo -e "\nReverse Clip\n$tempRev\n"
@@ -328,7 +330,7 @@ else
 	#concat
 	tempCat="$ffBegin \"$tempClip\" -i \"$tempClipRev\" -filter_complex \"[0:v][1:v] concat=n=2:v=1[v]\" -map \"[v]\" \"$tempClipCat\""
 	echo -e "\nConcat Clips\n$tempCat\n"
-		
+
 	paletteGen="$ffBegin \"$tempClipCat\" $palette"
 	echo -e "Generating Palette\n$paletteGen\n"
 
@@ -341,4 +343,3 @@ else
 	palRm="rm \"$palettePath\""
 	echo -e "Removing Palette\n$palRm\n"
 fi
-

@@ -94,6 +94,8 @@ fi
 if [ -z "$outVid" ]; then
 	echo "No output file. Use [-o <output filepath>]"
   exit 1
+else
+	outExt=${outGif##?*.}
 fi
 
 if [ -z "$start" ]; then

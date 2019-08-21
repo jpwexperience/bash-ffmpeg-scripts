@@ -95,7 +95,9 @@ if [ -z "$outVid" ]; then
 	echo "No output file specified."
 	echo "Usage: $(basename $0) [-i <infile>] [-o <outfile>] [options]" >&2
 	exit 1
-fi
+else
+  outExt=${outGif##?*.}
+  fi
 
 if [ -z "$noRun" ]; then
 	noRun="0"
