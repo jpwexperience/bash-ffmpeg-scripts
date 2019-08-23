@@ -181,6 +181,7 @@ for ((i = 0; i < $outLen; i++)); do
 	fi
 done
 
+#need to adjust values accordingly
 let finalHeight=($scaleFactor*$cropH)/$cropW
 echo -e "\nWidth:$cropW Height: $cropH Scale: $scaleFactor\nFinal Height: $finalHeight"
 
