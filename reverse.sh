@@ -99,6 +99,8 @@ fi
 if [ -z "$outGif" ]; then
 	echo "No output file. Use [-o <output filepath>]"
   exit 1
+else
+	outExt=${outGif##?*.}
 fi
 
 if [ -z "$clipStart" ]; then
@@ -164,14 +166,17 @@ for ((i = 0; i < $outLen; i++)); do
 			# % - suffix
 			# # - prefix
 			nums=', [0-9]+x[0-9]+'
-			if [[ $line =~ $nums ]]; then 
+			if [[ $line =~ $nums ]]; then
 				fullDim=${BASH_REMATCH[0]}
 				fullDim=${fullDim#', '}
 				if [[ "$cropW" == "-1" ]]; then
 					cropW=${fullDim%x*}
 				fi
 				if [[ "$cropH" == "-1" ]]; then
-					cropH=${fullDim#*x}	
+					cropH=${fullDim#*x}
+				fi
+				if [[ "$scaleFactor" == "-1" ]]; then
+					scaleFactor=${fullDim%x*}
 				fi
 			else
 				echo "Can't find video dimensions"
@@ -181,9 +186,25 @@ for ((i = 0; i < $outLen; i++)); do
 	fi
 done
 
+<<<<<<< HEAD
 #need to adjust values accordingly
 let finalHeight=($scaleFactor*$cropH)/$cropW
 echo -e "\nWidth:$cropW Height: $cropH Scale: $scaleFactor\nFinal Height: $finalHeight"
+=======
+let finalHeight="(($scaleFactor*$cropH)/$cropW)"
+#echo -e "\nWidth:$cropW Height: $cropH Scale: $scaleFactor\nFinal Height: $finalHeight"
+while (( $finalHeight % 2 == 0 )); do
+	let finalHeight++
+	if (( $scaleFactor % 2 == 0 )); then
+		let "scaleFactor = $scaleFactor + 2";
+	else
+		let "scaleFactor = $scaleFactor + 1";
+	fi
+	let finalHeight=($scaleFactor*$cropH)/$cropW
+done
+
+#echo -e "Actual Final\nWidth:$cropW Height: $cropH Scale: $scaleFactor\nFinal Height: $finalHeight"
+>>>>>>> 2e6ac80ff0107056964e96980496a1522fe9499e
 
 ####Subtitle Stuff
 if [[ "$subType" == "i" ]]; then
@@ -277,7 +298,7 @@ ffBegin="ffmpeg -analyzeduration 100M -probesize 500k -hide_banner -y -i"
 if [[ "$noRun" == 0 ]]; then
 	echo -e "\nGenerating Clip\n$tempCut\n"
 	eval $tempCut
-	
+
 	#reverse
 	tempRev="$ffBegin \"$tempClip\" -vf reverse \"$tempClipRev\""
 	echo -e "\nReverse Clip\n$tempRev\n"
@@ -315,7 +336,7 @@ else
 	#concat
 	tempCat="$ffBegin \"$tempClip\" -i \"$tempClipRev\" -filter_complex \"[0:v][1:v] concat=n=2:v=1[v]\" -map \"[v]\" \"$tempClipCat\""
 	echo -e "\nConcat Clips\n$tempCat\n"
-		
+
 	paletteGen="$ffBegin \"$tempClipCat\" $palette"
 	echo -e "Generating Palette\n$paletteGen\n"
 
@@ -328,4 +349,3 @@ else
 	palRm="rm \"$palettePath\""
 	echo -e "Removing Palette\n$palRm\n"
 fi
-
